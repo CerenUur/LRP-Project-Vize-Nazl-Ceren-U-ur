@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>LRP | Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #fffbfc;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .navbar {
+            background: #ffb6c1;
+        }
+
+        .lab-card {
+            background: white;
+            border-radius: 15px;
+            border: 1px solid #ffe4e8;
+            padding: 20px;
+            transition: 0.3s;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+            .lab-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 15px rgba(255,182,193,0.2);
+            }
+
+        .btn-pink {
+            background: #ffb6c1;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+            .btn-pink:hover {
+                background: #ff99aa;
+                color: white;
+            }
+
+        .inventory-list {
+            text-align: left;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline-pink {
+            border: 1px solid #ffb6c1;
+            color: #d87093;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+            .btn-outline-pink:hover {
+                background: #ffb6c1;
+                color: white;
+            }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark mb-5">
+        <div class="container d-flex justify-content-between">
+            <span class="navbar-brand">LRP Yönetim Paneli</span>
+            <button class="btn btn-sm btn-light px-3" onclick="logout()" style="border-radius: 8px; font-weight: 500;">
+                Güvenli Çıkış
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 style="color: #d87093; margin: 0;">Aktif Laboratuvarlar</h3>
+            <div>
+                <button type="button" class="btn btn-outline-pink me-2 px-3" onclick="openLabModal()">+ Yeni Lab Ekle</button>
+                <button type="button" class="btn btn-pink px-4" data-bs-toggle="modal" data-bs-target="#pcModal">+ Yeni Cihaz Ekle</button>
+            </div>
+        </div>
+        <div id="labList" class="row"></div>
+    </div>
+
+    <div class="modal fade" id="labModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title w-100 text-center fw-bold" style="color: #d87093;" id="labModalTitle">Lab Yönetimi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editLabId">
+                    <div class="mb-3">
+                        <label class="small text-secondary">Laboratuvar Adı</label>
+                        <input type="text" id="labNameInput" class="form-control" placeholder="Örn: Yazılım Lab">
+                    </div>
+                    <button type="button" onclick="saveLab()" class="btn btn-pink w-100 p-2">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="pcModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title w-100 text-center fw-bold" style="color: #d87093;">Cihaz Kaydı & Atama</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="small text-secondary">Hedef Laboratuvar</label>
+                        <select id="labId" class="form-select"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-secondary">Cihaz Özellikleri</label>
+                        <textarea id="pcSpecs" class="form-control" rows="2" placeholder="RAM, CPU vb."></textarea>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="small text-secondary">Zimmetlenecek Öğrenci No</label>
+                        <input type="text" id="studentNo" class="form-control" placeholder="Örn: 220101001">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-secondary">Öğrenci Ad Soyad</label>
+                        <input type="text" id="studentName" class="form-control" placeholder="Ahmet Yılmaz">
+                    </div>
+                    <button type="button" onclick="savePC()" class="btn btn-pink w-100 p-2">Kaydet ve Hesap Oluştur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let labModal;
+        document.addEventListener("DOMContentLoaded", () => {
+            labModal = new bootstrap.Modal(document.getElementById('labModal'));
+            loadLabs();
+        });
+
+        async function loadLabs() {
+            const res = await fetch('/api/labs');
+            const labs = await res.json();
+
+            const select = document.getElementById('labId');
+            select.innerHTML = labs.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+
+            document.getElementById('labList').innerHTML = labs.map(l => `
+                    <div class="col-md-6">
+                        <div class="lab-card">
+                            <div class="d-flex justify-content-between align-items-start px-2">
+                                <h4 style="color: #d87093;">${l.name}</h4>
+                                <button class="btn btn-sm text-secondary" onclick="openLabModal(${l.id}, '${l.name}')">Düzenle</button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="showComputers(${l.id})">Cihazları Listele</button>
+                            <div id="compList-${l.id}" class="inventory-list"></div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        function openLabModal(id = null, name = "") {
+            document.getElementById('editLabId').value = id || "";
+            document.getElementById('labNameInput').value = name || "";
+            document.getElementById('labModalTitle').innerText = id ? "Lab Güncelle" : "Yeni Lab Ekle";
+            labModal.show();
+        }
+
+        async function saveLab() {
+            const id = document.getElementById('editLabId').value;
+            const name = document.getElementById('labNameInput').value;
+            if (!name) return;
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/labs/${id}` : '/api/labs';
+
+            await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            });
+            labModal.hide();
+            loadLabs();
+        }
+
+        async function showComputers(labId) {
+            const res = await fetch('/api/labs/' + labId + '/computers');
+            const computers = await res.json();
+            const container = document.getElementById('compList-' + labId);
+            container.innerHTML = computers.length === 0 ? '<p class="text-center text-muted">Cihaz yok.</p>' :
+                '<ul class="list-group list-group-flush">' + computers.map(c => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom">
+                        <span class="fw-bold" style="color: #d87093;">${c.inventoryCode || c.InventoryCode}</span>
+                        <span class="text-muted small">${c.specs || c.Specs} ${c.studentName || c.StudentName ? ' - [' + (c.studentName || c.StudentName) + ']' : ''}</span>
+                    </li>
+                `).join('') + '</ul>';
+        }
+
+        async function savePC() {
+            const pcData = {
+                laboratoryId: parseInt(document.getElementById('labId').value),
+                specs: document.getElementById('pcSpecs').value,
+                studentNo: document.getElementById('studentNo').value,
+                studentName: document.getElementById('studentName').value
+            };
+            const res = await fetch('/api/computers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pcData)
+            });
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('pcModal')).hide();
+                loadLabs();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>

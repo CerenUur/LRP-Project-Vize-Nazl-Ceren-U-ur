@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>LRP | Öğrenci Paneli</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #fffbfc;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .navbar {
+            background: #ffb6c1;
+        }
+
+        .device-card {
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #ffe4e8;
+            padding: 30px;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container d-flex justify-content-between">
+            <span class="navbar-brand">LRP Öğrenci Portalı</span>
+            <button class="btn btn-sm btn-light" onclick="logout()">Çıkış Yap</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="device-card text-center shadow-sm">
+            <h2 id="studentWelcome" style="color: #d87093;">Hoş Geldin!</h2>
+            <p class="text-muted mb-4">Üzerinize zimmetli cihaz bilgileri aşağıdadır.</p>
+            <hr>
+            <div id="deviceDetails" class="text-start mx-auto" style="max-width: 400px;">
+                <p>Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sayfa açıldığında kullanıcıyı kontrol et
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== "Student") {
+            window.location.href = "index.html";
+        }
+
+        document.getElementById('studentWelcome').innerText = "Hoş Geldin, " + user.fullName;
+
+        async function loadMyDevice() {
+            const res = await fetch('/api/student/device/' + user.username);
+            const container = document.getElementById('deviceDetails');
+
+            if (res.ok) {
+                const pc = await res.json();
+                container.innerHTML = `
+                    <div class="alert alert-info py-2"><strong>Demirbaş Kodu:</strong> ${pc.inventoryCode}</div>
+                    <p><strong>Teknik Özellikler:</strong> ${pc.specs}</p>
+                    <p><strong>Laboratuvar:</strong> ${pc.laboratoryId === 1 ? 'Yazılım Lab' : 'Ağ Lab'}</p>
+                `;
+            } else {
+                container.innerHTML = "<div class='alert alert-warning'>Henüz üzerinize kayıtlı bir cihaz bulunamadı.</div>";
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        loadMyDevice();
+    </script>
+</body>
+</html>

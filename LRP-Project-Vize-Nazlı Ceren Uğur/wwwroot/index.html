@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>LRP | Giriş Yap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #fffbfc; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; border: 1px solid #ffe4e8; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(255,182,193,0.1); }
+        .btn-pink { background: #ffb6c1; color: white; border: none; border-radius: 10px; font-weight: bold; padding: 12px; }
+        .btn-pink:hover { background: #ff99aa; color: white; }
+        .form-control { border-radius: 10px; border: 1px solid #ffe4e8; padding: 12px; }
+    </style>
+</head>
+<body>
+    <div class="login-card text-center">
+        <h3 style="color: #d87093;" class="mb-4">LRP Giriş</h3>
+        <input type="text" id="username" class="form-control mb-3" placeholder="Kullanıcı Adı veya Öğrenci No">
+        <input type="password" id="password" class="form-control mb-4" placeholder="Şifre">
+        <button onclick="login()" class="btn btn-pink w-100">Giriş Yap</button>
+        <p id="errorMsg" class="text-danger mt-3 small" style="display:none;">Hatalı kullanıcı adı veya şifre!</p>
+    </div>
+
+    <script>
+        async function login() {
+            const loginData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loginData)
+            });
+
+            if (res.ok) {
+                const user = await res.json();
+                // Kullanıcı bilgilerini tarayıcı hafızasına al (Yetki kontrolü için)
+                localStorage.setItem('user', JSON.stringify(user));
+
+                // ROLE GÖRE YÖNLENDİRME (Hocanın şartı)
+                if (user.role === "Admin") {
+                    window.location.href = "dashboard.html";
+                } else {
+                    window.location.href = "student.html";
+                }
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
